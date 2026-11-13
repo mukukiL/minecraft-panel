@@ -53,3 +53,7 @@ Windows 会跳过依赖 Linux `dir_fd` 的文件系统测试。服务器控制�
 - 当前采用有界日志快照、同步控制和单文件上传。设计文档中的 RCON、备份、整合包、Mod 启用和持久控制任务属于后续范围。
 
 [API](docs/API.md) · [Ubuntu 部署](docs/DEPLOY.md) · [环境待确认项](docs/DISCOVERY.md) · [实现与设计差异](docs/IMPLEMENTATION.md)
+
+## 开源许可证
+
+本项目采用 [MIT 许可证](LICENSE)。
