@@ -1,0 +1,12 @@
+[profile]
+adapter = "tmux"
+session_name = "REPLACE_WITH_CONFIRMED_SESSION"
+window_name = "REPLACE_WITH_CONFIRMED_WINDOW"
+server_dir = "/REPLACE/WITH/CONFIRMED/SERVER/DIRECTORY"
+launch_entrypoint = "/REPLACE/WITH/ROOT/OWNED/LAUNCHER"
+tmux_socket = "/REPLACE/WITH/EXISTING/TMUX/SOCKET"
+# Supply the confirmed game port (required).
+# game_port = 25565
+start_timeout = 90
+stop_timeout = 90
+allow_tmux_stop = false
