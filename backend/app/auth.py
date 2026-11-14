@@ -28,7 +28,7 @@ OPERATE = READ | {"server.control", "mods.write"}
 SCOPES = {
     "viewer": READ,
     "operator": OPERATE,
-    "admin": OPERATE | {"users.admin", "console.write", "site.admin"},
+    "admin": OPERATE | {"users.admin", "console.write", "site.admin", "server.config"},
 }
 hasher = PasswordHasher(time_cost=3, memory_cost=32_768, parallelism=1, type=Type.ID)
 password_slots = threading.BoundedSemaphore(2)

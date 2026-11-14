@@ -182,6 +182,17 @@ th, td { padding: .65rem; border-bottom: 1px solid var(--border); }
 .site-image-preview.portrait img { object-fit: contain; }
 .site-image-file { margin: .85rem 0; }
 .settings-feedback { margin-top: .25rem; }
+.game-config-grid .full-width { grid-column: 1 / -1; }
+.field-key { font-weight: 400; color: var(--muted); overflow-wrap: anywhere; }
+.config-actions { margin-top: 1rem; }
+.log-filter { margin-bottom: .85rem; }
+.log-filter > span, .command-history summary { display: flex; align-items: center; gap: .4rem; }
+.command-history { margin-top: .65rem; }
+.command-history summary { width: fit-content; cursor: pointer; color: var(--forest); }
+.command-history .actions { margin-top: .5rem; }
+.command-history button { max-width: 100%; overflow-wrap: anywhere; word-break: break-word; }
+.config-diff td { max-width: 22rem; overflow-wrap: anywhere; }
+.text-link { text-decoration: underline; text-underline-offset: .15em; color: var(--forest); }
 .page-enter-active { transition: opacity .25s ease, transform .25s ease; }
 .page-enter-from { opacity: 0; transform: translateY(10px); }
 .reveal-enter-active, .reveal-leave-active { transition: opacity .18s, transform .18s; }

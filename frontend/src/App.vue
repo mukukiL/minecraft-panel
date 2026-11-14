@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref } from 'vue'
-import { Activity, Box, LayoutDashboard, LogIn, LogOut, Palette, Settings2, UsersRound } from '@lucide/vue'
+import { Activity, Box, FileSliders, LayoutDashboard, LogIn, LogOut, Palette, Settings2, UsersRound } from '@lucide/vue'
 import { useRouter } from 'vue-router'
 import { explain, logout, session } from './session'
 import { branding } from './branding'
@@ -30,6 +30,7 @@ async function signOut() {
       <nav aria-label="主导航">
         <RouterLink to="/"><Activity :size="16" /> 状态监测</RouterLink>
         <RouterLink v-if="session" to="/manage"><LayoutDashboard :size="16" /> 服务器管理</RouterLink>
+        <RouterLink v-if="session?.user.scopes.includes('server.config')" to="/game-config"><FileSliders :size="16" /> 游戏配置</RouterLink>
         <RouterLink v-if="session?.user.scopes.includes('users.admin')" to="/users"><UsersRound :size="16" /> 用户</RouterLink>
         <RouterLink v-if="session?.user.scopes.includes('site.admin')" to="/site-settings"><Palette :size="16" /> 站点设置</RouterLink>
         <RouterLink v-if="session" to="/account"><Settings2 :size="16" /> 账户</RouterLink>

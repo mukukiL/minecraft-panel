@@ -1,17 +1,25 @@
 <script setup lang="ts">
-import { onMounted, onUnmounted, ref } from 'vue'
+import { computed, onMounted, onUnmounted, ref } from 'vue'
 import { api, explain } from './session'
-import { Copy, Maximize2, Minimize2, Play, RefreshCw, RotateCcw, Send, Server, Square, Terminal, Upload } from '@lucide/vue'
+import { Copy, History, Maximize2, Minimize2, Play, RefreshCw, RotateCcw, Search, Send, Server, Square, Terminal, Upload } from '@lucide/vue'
 import { branding } from './branding'
 
 type Action = 'start' | 'stop' | 'restart'
 type Status = { state: string; adapter: string; controls: Action[]; upload_available: boolean; console_available: boolean }
 const status = ref<Status>()
 const lines = ref<string[]>([])
+const logFilter = ref('')
+const visibleLines = computed(() => {
+  const search = logFilter.value.trim().toLowerCase()
+  return search ? lines.value.filter(line => line.toLowerCase().includes(search)) : lines.value
+})
 const refreshing = ref(false)
 const expandedLogs = ref(false)
 const copyMessage = ref('')
 const command = ref('')
+const commandHistory = ref<string[]>([])
+const historyIndex = ref(-1)
+let commandDraft = ''
 const sending = ref(false)
 const commandMessage = ref('')
 const error = ref('')
@@ -47,11 +55,19 @@ onUnmounted(() => clearInterval(interval))
 async function copyLogs() {
   copyMessage.value = ''
   try {
-    await navigator.clipboard.writeText(lines.value.join('\n'))
-    copyMessage.value = '日志已复制'
+    await navigator.clipboard.writeText(visibleLines.value.join('\n'))
+    copyMessage.value = logFilter.value.trim() ? '筛选结果已复制' : '日志已复制'
   } catch {
     copyMessage.value = '复制失败，请选中文字后手动复制。'
   }
+}
+
+function browseCommands(direction: number) {
+  const next = historyIndex.value + direction
+  if (next < -1 || next >= commandHistory.value.length) return
+  if (historyIndex.value === -1) commandDraft = command.value
+  historyIndex.value = next
+  command.value = commandHistory.value[next] ?? commandDraft
 }
 
 async function sendCommand() {
@@ -61,6 +77,8 @@ async function sendCommand() {
   commandMessage.value = ''
   try {
     await api('/console/command', { method: 'POST', body: JSON.stringify({ command: value }) })
+    commandHistory.value = [value, ...commandHistory.value.filter(item => item !== value)].slice(0, 10)
+    historyIndex.value = -1
     command.value = ''
     commandMessage.value = '命令已发送，输出见日志。'
     await refresh()
@@ -139,24 +157,36 @@ async function upload() {
       <div class="card-heading">
         <h2 id="console-heading"><Terminal :size="18" /> 服务器控制台</h2>
         <div class="actions">
-          <button class="secondary" :disabled="!lines.length" @click="copyLogs"><Copy :size="16" /> 复制日志</button>
+          <button class="secondary" :disabled="!visibleLines.length" @click="copyLogs"><Copy :size="16" /> {{ logFilter.trim() ? '复制筛选结果' : '复制日志' }}</button>
           <button class="secondary" aria-controls="server-log" :aria-expanded="expandedLogs" @click="expandedLogs = !expandedLogs">
             <component :is="expandedLogs ? Minimize2 : Maximize2" :size="16" />
             {{ expandedLogs ? '缩小' : '放大' }}
           </button>
         </div>
       </div>
-      <pre id="server-log" class="console" :class="{ expanded: expandedLogs }" tabindex="0" aria-labelledby="console-heading">{{ lines.length ? lines.join('\n') : '暂无日志' }}</pre>
+      <label class="log-filter">
+        <span><Search :size="16" /> 筛选日志<span v-if="logFilter.trim()">（{{ visibleLines.length }}/{{ lines.length }}）</span></span>
+        <input v-model="logFilter" type="search" maxlength="100" placeholder="例如 WARN 或 ERROR">
+      </label>
+      <pre id="server-log" class="console" :class="{ expanded: expandedLogs }" tabindex="0" aria-labelledby="console-heading">{{ visibleLines.length ? visibleLines.join('\n') : lines.length ? '没有匹配的日志' : '暂无日志' }}</pre>
       <p v-if="copyMessage" class="feedback" role="status">{{ copyMessage }}</p>
       <form v-if="status?.console_available" class="command-form" @submit.prevent="sendCommand">
         <label for="game-command">Minecraft 命令</label>
         <div class="command-input">
           <input id="game-command" v-model="command" placeholder="list" maxlength="2048" autocomplete="off"
-            :disabled="status.state !== 'running' || sending">
+            :disabled="status.state !== 'running' || sending"
+            @keydown.up.prevent="browseCommands(1)" @keydown.down.prevent="browseCommands(-1)">
           <button :disabled="!command.trim() || status.state !== 'running' || sending">
             <Send :size="16" /> {{ sending ? '发送中' : '发送' }}
           </button>
         </div>
+        <details v-if="commandHistory.length" class="command-history">
+          <summary><History :size="15" /> 最近命令</summary>
+          <div class="actions">
+            <button v-for="item in commandHistory" :key="item" class="secondary" type="button"
+              :disabled="sending" @click="historyIndex = -1; command = item">{{ item }}</button>
+          </div>
+        </details>
         <p v-if="commandMessage" class="feedback" role="status">{{ commandMessage }}</p>
       </form>
     </section>

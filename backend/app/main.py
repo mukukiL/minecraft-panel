@@ -9,7 +9,7 @@ from alembic.runtime.migration import MigrationContext
 from alembic.script import ScriptDirectory
 from fastapi import FastAPI
 
-from app import auth, branding, server, socket, users
+from app import auth, branding, game_config, server, socket, users
 from app.adapters.mock import MockAdapter, UnconfiguredAdapter
 from app.adapters.screen import ScreenAdapter
 from app.adapters.tmux import TmuxAdapter
@@ -74,7 +74,14 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.state.settings = settings
     app.add_middleware(RequestLimits, settings=settings)
     install_errors(app)
-    for router in (auth.router, users.router, branding.router, server.router, socket.api):
+    for router in (
+        auth.router,
+        users.router,
+        branding.router,
+        server.router,
+        game_config.router,
+        socket.api,
+    ):
         app.include_router(router, prefix=API)
     app.include_router(socket.sockets)
 

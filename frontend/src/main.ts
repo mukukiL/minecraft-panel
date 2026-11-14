@@ -7,6 +7,7 @@ import Monitor from './Monitor.vue'
 import Users from './Users.vue'
 import Account from './Account.vue'
 import SiteSettings from './SiteSettings.vue'
+import GameConfig from './GameConfig.vue'
 import { loadBranding } from './branding'
 import { restore, session } from './session'
 import './style.css'
@@ -20,6 +21,7 @@ const router = createRouter({
     { path: '/users', component: Users, meta: { scope: 'users.admin' } },
     { path: '/account', component: Account },
     { path: '/site-settings', component: SiteSettings, meta: { scope: 'site.admin' } },
+    { path: '/game-config', component: GameConfig, meta: { scope: 'server.config' } },
     { path: '/:pathMatch(.*)*', redirect: '/' },
   ],
 })

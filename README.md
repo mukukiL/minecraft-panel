@@ -51,6 +51,7 @@ Windows 会跳过依赖 Linux `dir_fd` 的文件系统测试。服务器控制�
 - 生产需 HTTPS，使用 Secure、HttpOnly、SameSite=Strict 会话 Cookie。开发 HTTP 仅允许回环 Origin，前端不持久化凭据或令牌。
 - 开发服务器启停、重启和上传默认只做模拟。真实 tmux 需配置现有 socket、独立 cgroup 和固定 launcher。screen 仅提供会话探测，日志与上传由文件层提供。
 - 当前采用有界日志快照、同步控制和单文件上传。RCON、备份、整合包、Mod 启用和持久控制任务属于后续范围。
+- 「游戏配置」可读取已接入服务器的 `server.properties`。管理员可修改表单中的常用属性、查看改动并恢复上次修改。配置保存后在下次启动时生效，日志支持关键词筛选，控制台可回填当前页面发送过的命令。
 - 在已验证为直接运行 Java 的 tmux profile 中设置 `allow_tmux_console = true`，为管理员启用命令输入。
 - 管理员登录后打开「站点设置」，即可保存站点标题、上传或移除头图和背景图。支持 5 MB 以内的静态 JPG、PNG 和 WebP。标题和图片保存在面板 SQLite 数据库中，访客刷新即可看到，无需重新构建。
 - 站点配置可通过 `GET /api/v1/site` 读取，修改接口需要管理员权限和 CSRF 凭据。通过反向代理部署时，确保 `/api/v1/site/images/` 允许 5 MB 上传。
