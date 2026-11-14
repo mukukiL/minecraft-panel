@@ -1,7 +1,7 @@
 import asyncio
 import secrets
 from collections import Counter
-from contextlib import asynccontextmanager
+from contextlib import asynccontextmanager, suppress
 from pathlib import Path
 
 from alembic.config import Config
@@ -17,6 +17,7 @@ from app.config import Settings, load_profile, load_settings
 from app.db import database
 from app.errors import install_errors
 from app.http import RequestLimits
+from app.monitor import Monitor
 
 API = "/api/v1"
 
@@ -51,7 +52,14 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             with engine.connect() as conn:
                 if MigrationContext.configure(conn).get_current_revision() != head:
                     raise RuntimeError("Run alembic upgrade head before starting the panel")
-            yield
+            state.monitor = Monitor()
+            monitor_task = asyncio.create_task(state.monitor.run(state.adapter))
+            try:
+                yield
+            finally:
+                monitor_task.cancel()
+                with suppress(asyncio.CancelledError):
+                    await monitor_task
         finally:
             engine.dispose()
 

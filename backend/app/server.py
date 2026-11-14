@@ -5,10 +5,11 @@ from pathlib import Path
 from typing import Annotated, Literal
 
 from fastapi import APIRouter, Depends, Query, Request
+from pydantic import Field, field_validator
 from starlette.concurrency import run_in_threadpool
 from starlette.requests import ClientDisconnect
 
-from app.auth import Payload, audit, cookie_token, lookup, require_csrf, require_scope
+from app.auth import SCOPES, Payload, audit, cookie_token, lookup, require_csrf, require_scope
 from app.db import User, write
 from app.errors import Problem
 from app.storage import staged_upload, tail, validate_jar_name
@@ -20,12 +21,25 @@ router = APIRouter()
 Viewer = Annotated[User, Depends(require_scope("server.view"))]
 Reader = Annotated[User, Depends(require_scope("console.read"))]
 Operator = Annotated[User, Depends(require_scope("server.control"))]
+Commander = Annotated[User, Depends(require_scope("console.write"))]
 Uploader = Annotated[User, Depends(require_scope("mods.write"))]
 Action = Literal["start", "stop", "restart"]
 
 
 class Confirm(Payload):
     confirm: Literal["STOP", "RESTART"]
+
+
+class ConsoleCommand(Payload):
+    command: Annotated[str, Field(min_length=1, max_length=2048)]
+
+    @field_validator("command")
+    @classmethod
+    def one_printable_line(cls, value: str) -> str:
+        command = value.strip().removeprefix("/").strip()
+        if not command or not value.isprintable():
+            raise ValueError("expected a single printable command")
+        return command
 
 
 @contextmanager
@@ -59,14 +73,21 @@ def operation_audit(state, event: str, actor: int, outcome: str) -> None:
         audit(db, event, actor, outcome=outcome)
 
 
-def authorize_action(state, token: str, event: str | None = None) -> int:
+def authorize_action(
+    state, token: str, event: str | None = None, scope: str = "server.control"
+) -> int:
     with write(state.engine) as db:
         user, _ = lookup(db, state.settings, token)
-        if user.role not in ("admin", "operator"):
+        if scope not in SCOPES[user.role]:
             raise Problem(403, "FORBIDDEN")
         if event is not None:
             audit(db, event, user.id, outcome="requested")
         return user.id
+
+
+@router.get("/public/monitor")
+async def public_monitor(request: Request) -> dict:
+    return request.app.state.monitor.snapshot()
 
 
 @router.get("/server/status")
@@ -77,6 +98,8 @@ async def status(request: Request, user: Viewer) -> dict:
         "state": await adapter.status(),
         "adapter": adapter.kind,
         "controls": list(adapter.controls) if user.role != "viewer" else [],
+        "console_available": "console.write" in SCOPES[user.role]
+        and getattr(adapter, "console_available", False),
         "upload_available": user.role != "viewer"
         and (state.profile is not None or adapter.kind == "mock"),
     }
@@ -142,6 +165,27 @@ def recent_logs(state, limit: int) -> list[str]:
 @router.get("/console/logs")
 def logs(request: Request, user: Reader, limit: Annotated[int, Query(ge=1, le=200)] = 100) -> dict:
     return {"lines": recent_logs(request.app.state, limit)}
+
+
+@router.post("/console/command", status_code=204, dependencies=[Depends(require_csrf)])
+async def console_command(payload: ConsoleCommand, request: Request, user: Commander) -> None:
+    state = request.app.state
+    if not getattr(state.adapter, "console_available", False):
+        raise Problem(409, "CONSOLE_UNAVAILABLE")
+    if state.control.locked():
+        raise Problem(409, "CONTROL_BUSY")
+    async with state.control:
+        with control_lock(state):
+            event = "console.command"
+            actor = await run_in_threadpool(
+                authorize_action, state, cookie_token(request), event, "console.write"
+            )
+            try:
+                await state.adapter.console(payload.command)
+            except Problem:
+                await run_in_threadpool(operation_audit, state, event, actor, "failed")
+                raise
+            await run_in_threadpool(operation_audit, state, event, actor, "ok")
 
 
 @router.put("/mods/upload/{filename}", status_code=201, dependencies=[Depends(require_csrf)])

@@ -12,11 +12,11 @@ class Result:
     stderr: str = ""
 
 
-async def run_argv(*argv: str) -> Result:
+async def run_argv(*argv: str, input_data: bytes | None = None) -> Result:
     try:
         child = await asyncio.create_subprocess_exec(
             *argv,
-            stdin=asyncio.subprocess.DEVNULL,
+            stdin=asyncio.subprocess.PIPE if input_data is not None else asyncio.subprocess.DEVNULL,
             stdout=asyncio.subprocess.PIPE,
             stderr=asyncio.subprocess.PIPE,
             env={"PATH": "/usr/bin:/bin", "LC_ALL": "C"},
@@ -24,7 +24,7 @@ async def run_argv(*argv: str) -> Result:
     except OSError:
         raise Problem(503, "ADAPTER_UNAVAILABLE") from None
     try:
-        stdout, stderr = await asyncio.wait_for(child.communicate(), timeout=5)
+        stdout, stderr = await asyncio.wait_for(child.communicate(input_data), timeout=5)
     except (TimeoutError, asyncio.CancelledError) as exc:
         if child.returncode is None:
             try:

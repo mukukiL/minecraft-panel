@@ -26,6 +26,7 @@ class Profile(BaseModel):
     stop_timeout: int = Field(default=90, ge=1, le=120)
     start_timeout: int = Field(default=90, ge=1, le=120)
     allow_tmux_stop: bool = False
+    allow_tmux_console: bool = False
 
     @model_validator(mode="after")
     def validate_paths(self) -> "Profile":

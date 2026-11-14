@@ -38,6 +38,30 @@ def test_mock_controls_and_log(panel):
     assert "模拟服务器已停止" in panel.client.get(API + "/console/logs?limit=1").json()["lines"][0]
 
 
+def test_monitor_public_and_console_admin_only(panel):
+    snapshot = panel.client.get(API + "/public/monitor")
+    assert snapshot.status_code == 200
+    assert set(snapshot.json()) == {"state", "samples"}
+    assert panel.client.get(API + "/console/logs").status_code == 401
+
+    path = API + "/console/command"
+    assert panel.client.post(path, json={"command": "list"}).status_code in (401, 403)
+    headers, _ = sign_in(panel, "operator")
+    assert panel.client.post(path, headers=headers, json={"command": "list"}).status_code == 403
+    headers, _ = sign_in(panel)
+    assert (
+        panel.client.post(path, headers={"Origin": ORIGIN}, json={"command": "list"}).status_code
+        == 403
+    )
+    assert (
+        panel.client.post(path, headers=headers, json={"command": "list\nstop"}).status_code == 422
+    )
+    assert panel.client.post(path, headers=headers, json={"command": "list"}).status_code == 409
+    assert panel.client.post(API + "/server/start", headers=headers).status_code == 200
+    assert panel.client.post(path, headers=headers, json={"command": "/list"}).status_code == 204
+    assert panel.client.get(API + "/console/logs?limit=1").json()["lines"] == ["[mock] list"]
+
+
 def test_upload_validation(panel):
     headers, _ = sign_in(panel, "operator")
     headers["Content-Type"] = "application/java-archive"

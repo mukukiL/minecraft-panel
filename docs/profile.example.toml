@@ -10,3 +10,4 @@ tmux_socket = "/REPLACE/WITH/EXISTING/TMUX/SOCKET"
 start_timeout = 90
 stop_timeout = 90
 allow_tmux_stop = false
+allow_tmux_console = false

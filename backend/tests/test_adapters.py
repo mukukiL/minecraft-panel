@@ -116,6 +116,33 @@ def test_screen_exact_target_and_no_blind_input():
     assert all(call.args == ("/usr/bin/screen", "-ls") for call in run.await_args_list)
 
 
+def test_tmux_console_sends_input_as_data():
+    run = AsyncMock(
+        side_effect=[
+            Result(0, "123|fixture\n"),
+            Result(0, "%3|minecraft|java|/opt/test game|0|0|456\n"),
+            Result(0, ""),
+            Result(0, ""),
+            Result(0, ""),
+        ]
+    )
+    adapter = TmuxAdapter(
+        profile(allow_tmux_console=True),
+        run,
+        lambda _: True,
+        verify_java=lambda _: True,
+        listening=lambda *_: True,
+    )
+    text = 'say "hello"; literal text'
+    asyncio.run(adapter.console(text))
+    load, submit, cleanup = run.await_args_list[-3:]
+    assert load.kwargs == {"input_data": text.encode()}
+    assert "load-buffer" in load.args
+    assert text not in " ".join(submit.args)
+    assert "paste-buffer" in submit.args[-2]
+    assert "delete-buffer" in cleanup.args
+
+
 @pytest.mark.parametrize(
     ("owned", "busy", "state"),
     [(True, True, "running"), (False, True, "port_conflict"), (False, False, "starting")],

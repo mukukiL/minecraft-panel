@@ -4,6 +4,7 @@ from app.errors import Problem
 class MockAdapter:
     kind = "mock"
     controls = ("start", "stop", "restart")
+    console_available = True
 
     def __init__(self) -> None:
         self.running = False
@@ -23,6 +24,11 @@ class MockAdapter:
             raise Problem(409, "SERVER_NOT_RUNNING")
         self.running = False
         self.logs = [*self.logs[-199:], "[mock] 模拟服务器已停止"]
+
+    async def console(self, command: str) -> None:
+        if not self.running:
+            raise Problem(409, "SERVER_NOT_RUNNING")
+        self.logs = [*self.logs[-199:], f"[mock] {command}"]
 
 
 class UnconfiguredAdapter:

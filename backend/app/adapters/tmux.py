@@ -1,7 +1,9 @@
 import os
 import re
+import secrets
 import socket
-from collections.abc import Awaitable, Callable
+from collections.abc import Callable
+from contextlib import suppress
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -98,7 +100,7 @@ class TmuxAdapter:
     def __init__(
         self,
         profile: Profile,
-        run: Callable[..., Awaitable[Result]] = run_argv,
+        run=run_argv,
         separated: Callable[[int], bool] = isolated_server,
         port_busy: Callable[[int], bool] = port_in_use,
         verify_java: Callable[[Pane], bool] = java_process,
@@ -111,11 +113,15 @@ class TmuxAdapter:
         self.verify_java = verify_java
         self.listening = listening
         self.controls = ("start", "stop", "restart") if profile.allow_tmux_stop else ("start",)
+        self.console_available = profile.allow_tmux_console
 
-    async def command(self, *args: str) -> Result:
+    async def command(self, *args: str, input_data: bytes | None = None) -> Result:
         # -N is essential. If the external tmux server exits between calls,
         # new-session must fail instead of creating a server in the panel cgroup.
-        return await self.run("/usr/bin/tmux", "-N", "-S", str(self.profile.tmux_socket), *args)
+        argv = ("/usr/bin/tmux", "-N", "-S", str(self.profile.tmux_socket), *args)
+        if input_data is not None:
+            return await self.run(*argv, input_data=input_data)
+        return await self.run(*argv)
 
     async def snapshot(self) -> tuple[int, list[str], Pane | None]:
         result = await self.command("list-sessions", "-F", "#{pid}|#{session_name}")
@@ -208,9 +214,20 @@ class TmuxAdapter:
     async def stop(self) -> None:
         if not self.profile.allow_tmux_stop:
             raise Problem(409, "TMUX_STOP_DISABLED")
+        pane = await self.command_pane()
+        result = await self.send_if_java(
+            pane, f"send-keys -t {pane.id} -l -- stop ; send-keys -t {pane.id} Enter"
+        )
+        if result.code or result.stdout.strip() == "STOP_REFUSED":
+            raise Problem(409, "TMUX_STOP_FAILED")
+
+    async def command_pane(self) -> Pane:
         pid, _, pane = await self.snapshot()
         if pane is None or not self.is_java(pane) or not self.separated(pid):
             raise Problem(409, "TMUX_PANE_UNVERIFIED")
+        return pane
+
+    async def send_if_java(self, pane: Pane, commands: str) -> Result:
         # Check the foreground again inside tmux immediately before queuing the keys.
         cwd = str(self.profile.server_dir)
         check = (
@@ -221,14 +238,35 @@ class TmuxAdapter:
             f"#{{==:#{{pane_pid}},{pane.pid}}}"
             "}}}}"
         )
-        result = await self.command(
+        return await self.command(
             "if-shell",
             "-F",
             "-t",
             pane.id,
             check,
-            f"send-keys -t {pane.id} -l -- stop ; send-keys -t {pane.id} Enter",
+            commands,
             "display-message -p STOP_REFUSED",
         )
-        if result.code or result.stdout.strip() == "STOP_REFUSED":
-            raise Problem(409, "TMUX_STOP_FAILED")
+
+    async def console(self, command: str) -> None:
+        if not self.console_available:
+            raise Problem(409, "CONSOLE_UNAVAILABLE")
+        pane = await self.command_pane()
+        if not self.listening(pane.pid, self.profile.game_port):
+            raise Problem(409, "SERVER_NOT_RUNNING")
+        buffer = "mc-panel-" + secrets.token_hex(16)
+        # The command goes through stdin as data, including quotes and semicolons.
+        try:
+            loaded = await self.command(
+                "load-buffer", "-b", buffer, "-", input_data=command.encode()
+            )
+            if loaded.code:
+                raise Problem(409, "CONSOLE_SEND_FAILED")
+            result = await self.send_if_java(
+                pane, f"paste-buffer -d -r -b {buffer} -t {pane.id} ; send-keys -t {pane.id} Enter"
+            )
+            if result.code or result.stdout.strip() == "STOP_REFUSED":
+                raise Problem(409, "CONSOLE_SEND_FAILED")
+        finally:
+            with suppress(Problem):
+                await self.command("delete-buffer", "-b", buffer)

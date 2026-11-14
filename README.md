@@ -1,6 +1,6 @@
 # Minecraft Panel
 
-基于 FastAPI、Vue 3 和 SQLite 的 Minecraft Fabric 服务器管理面板。支持管理员初始化、登录与退出、密码修改、角色管理、服务器状态、启停重启、日志与 Mod 上传。开发模式默认使用进程内模拟服务。
+基于 FastAPI、Vue 3 和 SQLite 的 Minecraft Fabric 服务器管理面板。访客可查看服务器状态及最近十分钟的主机 CPU 和内存趋势。登录后按角色管理服务器、读取日志及上传 Mod。管理员可在已启用的 tmux 游戏控制台发送 Minecraft 命令。开发模式默认使用进程内模拟服务。
 
 ## 本地启动
 
@@ -51,6 +51,8 @@ Windows 会跳过依赖 Linux `dir_fd` 的文件系统测试。服务器控制�
 - 生产需 HTTPS，使用 Secure、HttpOnly、SameSite=Strict 会话 Cookie。开发 HTTP 仅允许回环 Origin，前端不持久化凭据或令牌。
 - 开发服务器启停、重启和上传默认只做模拟。真实 tmux 需配置现有 socket、独立 cgroup 和固定 launcher。screen 仅提供会话探测，日志与上传由文件层提供。
 - 当前采用有界日志快照、同步控制和单文件上传。RCON、备份、整合包、Mod 启用和持久控制任务属于后续范围。
+- 在已验证为直接运行 Java 的 tmux profile 中设置 `allow_tmux_console = true`，为管理员启用命令输入。
+- 定制图片可放在 `frontend/public/branding/portrait.jpg` 和 `frontend/public/branding/meadow.png`，构建时设置 `VITE_CUSTOM_BRANDING=true`。默认构建使用通用图标和渐变背景。
 
 ## Ubuntu 部署概要
 

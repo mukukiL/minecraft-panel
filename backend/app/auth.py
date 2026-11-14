@@ -25,7 +25,7 @@ Password = Annotated[SecretStr, Field(min_length=12, max_length=128)]
 TOKEN = re.compile(r"[A-Za-z0-9_-]{43}", re.ASCII)
 READ = {"server.view", "console.read"}
 OPERATE = READ | {"server.control", "mods.write"}
-SCOPES = {"viewer": READ, "operator": OPERATE, "admin": OPERATE | {"users.admin"}}
+SCOPES = {"viewer": READ, "operator": OPERATE, "admin": OPERATE | {"users.admin", "console.write"}}
 hasher = PasswordHasher(time_cost=3, memory_cost=32_768, parallelism=1, type=Type.ID)
 password_slots = threading.BoundedSemaphore(2)
 WEAK = {"password1234", "password123456", "123456789012", "administrator", "qwerty123456"}

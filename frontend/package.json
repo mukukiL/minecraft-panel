@@ -7,6 +7,7 @@
     "build": "vue-tsc --noEmit && vite build"
   },
   "dependencies": {
+    "@lucide/vue": "^1.73.0",
     "vue": "^3.5.45",
     "vue-router": "^5.0.0"
   },
@@ -17,5 +18,7 @@
     "vite": "^8.3.8",
     "vue-tsc": "^3.0.0"
   },
-  "engines": {"node": "^22.12.0 || >=24"}
+  "engines": {
+    "node": "^22.12.0 || >=24"
+  }
 }

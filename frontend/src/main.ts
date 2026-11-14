@@ -3,6 +3,7 @@ import { createRouter, createWebHistory } from 'vue-router'
 import App from './App.vue'
 import Dashboard from './Dashboard.vue'
 import Login from './Login.vue'
+import Monitor from './Monitor.vue'
 import Users from './Users.vue'
 import Account from './Account.vue'
 import { restore, session } from './session'
@@ -11,8 +12,9 @@ import './style.css'
 const router = createRouter({
   history: createWebHistory(),
   routes: [
-    { path: '/login', component: Login },
-    { path: '/', component: Dashboard },
+    { path: '/login', component: Login, meta: { public: true } },
+    { path: '/', component: Monitor, meta: { public: true } },
+    { path: '/manage', component: Dashboard },
     { path: '/users', component: Users, meta: { scope: 'users.admin' } },
     { path: '/account', component: Account },
     { path: '/:pathMatch(.*)*', redirect: '/' },
@@ -24,12 +26,12 @@ router.beforeEach(async to => {
     restored = true
     try { await restore() } catch { session.value = null }
   }
-  if (!session.value) return to.path === '/login' ? true : '/login'
-  if (to.path === '/login') return '/'
+  if (!session.value) return to.meta.public ? true : '/login'
+  if (to.path === '/login') return '/manage'
   if (to.meta.scope && !session.value.user.scopes.includes(String(to.meta.scope))) return '/'
   return true
 })
 watch(session, value => {
-  if (!value && router.currentRoute.value.path !== '/login') void router.replace('/login')
+  if (!value && !router.currentRoute.value.meta.public) void router.replace('/login')
 })
 createApp(App).use(router).mount('#app')

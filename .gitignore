@@ -21,3 +21,4 @@ coverage/
 *.pem
 *.key
 *.jar
+frontend/public/branding/
