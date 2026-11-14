@@ -9,6 +9,7 @@ from sqlalchemy import (
     CheckConstraint,
     ForeignKey,
     Integer,
+    LargeBinary,
     String,
     create_engine,
     event,
@@ -47,6 +48,16 @@ class AuditLog(Base):
     actor_id: Mapped[int | None] = mapped_column(ForeignKey("users.id"))
     target: Mapped[str | None] = mapped_column(String(128))
     outcome: Mapped[str] = mapped_column(String(16))
+
+
+class SiteBranding(Base):
+    __tablename__ = "site_branding"
+    __table_args__ = (CheckConstraint("id = 1"),)
+    id: Mapped[int] = mapped_column(primary_key=True)
+    title: Mapped[str] = mapped_column(String(64))
+    portrait: Mapped[bytes | None] = mapped_column(LargeBinary, deferred=True)
+    background: Mapped[bytes | None] = mapped_column(LargeBinary, deferred=True)
+    revision: Mapped[int] = mapped_column(Integer)
 
 
 def database(path: Path):

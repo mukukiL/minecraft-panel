@@ -1,3 +1,23 @@
-export const customBranding = import.meta.env.VITE_CUSTOM_BRANDING === 'true'
-export const portrait = '/branding/portrait.jpg'
-export const background = '/branding/meadow.png'
+import { shallowRef } from 'vue'
+import { api } from './session'
+
+export type SiteBranding = {
+  title: string
+  portrait: string | null
+  background: string | null
+}
+
+export const branding = shallowRef<SiteBranding>({
+  title: 'Minecraft Panel',
+  portrait: null,
+  background: null,
+})
+
+export function applyBranding(settings: SiteBranding) {
+  branding.value = settings
+  document.title = settings.title
+}
+
+export async function loadBranding() {
+  applyBranding(await api<SiteBranding>('/site', { signal: AbortSignal.timeout(4000) }))
+}

@@ -6,6 +6,8 @@ import Login from './Login.vue'
 import Monitor from './Monitor.vue'
 import Users from './Users.vue'
 import Account from './Account.vue'
+import SiteSettings from './SiteSettings.vue'
+import { loadBranding } from './branding'
 import { restore, session } from './session'
 import './style.css'
 
@@ -17,6 +19,7 @@ const router = createRouter({
     { path: '/manage', component: Dashboard },
     { path: '/users', component: Users, meta: { scope: 'users.admin' } },
     { path: '/account', component: Account },
+    { path: '/site-settings', component: SiteSettings, meta: { scope: 'site.admin' } },
     { path: '/:pathMatch(.*)*', redirect: '/' },
   ],
 })
@@ -35,3 +38,4 @@ watch(session, value => {
   if (!value && !router.currentRoute.value.meta.public) void router.replace('/login')
 })
 createApp(App).use(router).mount('#app')
+void loadBranding().catch(() => { /* The default branding remains available during outages. */ })

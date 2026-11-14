@@ -52,12 +52,13 @@ Windows 会跳过依赖 Linux `dir_fd` 的文件系统测试。服务器控制�
 - 开发服务器启停、重启和上传默认只做模拟。真实 tmux 需配置现有 socket、独立 cgroup 和固定 launcher。screen 仅提供会话探测，日志与上传由文件层提供。
 - 当前采用有界日志快照、同步控制和单文件上传。RCON、备份、整合包、Mod 启用和持久控制任务属于后续范围。
 - 在已验证为直接运行 Java 的 tmux profile 中设置 `allow_tmux_console = true`，为管理员启用命令输入。
-- 定制图片可放在 `frontend/public/branding/portrait.jpg` 和 `frontend/public/branding/meadow.png`，构建时设置 `VITE_CUSTOM_BRANDING=true`。默认构建使用通用图标和渐变背景。
+- 管理员登录后打开「站点设置」，即可保存站点标题、上传或移除头图和背景图。支持 5 MB 以内的静态 JPG、PNG 和 WebP。标题和图片保存在面板 SQLite 数据库中，访客刷新即可看到，无需重新构建。
+- 站点配置可通过 `GET /api/v1/site` 读取，修改接口需要管理员权限和 CSRF 凭据。通过反向代理部署时，确保 `/api/v1/site/images/` 允许 5 MB 上传。
 
 ## Ubuntu 部署概要
 
 1. 在本地执行 `npm ci` 和 `npm run build`，将 `frontend/dist` 交给 Nginx 托管。
-2. 参考 [环境变量样例](.env.example)，设置 `MC_PANEL_ENV=production`、实际的 HTTPS Origin 及面板用户专用的数据库路径。以非 root 面板用户运行数据库迁移并初始化管理员。
+2. 参考 [环境变量样例](.env.example)，设置 `MC_PANEL_ENV=production`、实际的 HTTPS Origin 及面板用户专用的数据库路径。以非 root 面板用户执行 `alembic upgrade head` 并初始化管理员。升级已有部署时先备份 SQLite 数据库，再执行迁移。
 3. 使用 systemd 启动单 worker Uvicorn，监听 `127.0.0.1:8000`。由 Nginx 终止 TLS，将 `/api/`、`/healthz` 和 `/ws` 反代给 Uvicorn。Nginx 应覆盖转发头，Uvicorn 仅信任本机代理。
 4. 参考 [服务器配置样例](docs/profile.example.toml)，先在隔离的 Ubuntu 测试会话验证启停、日志与上传。确认 tmux 位于面板服务的 cgroup 外，且固定启动脚本由 root 管理，再接入现有服务器。
 

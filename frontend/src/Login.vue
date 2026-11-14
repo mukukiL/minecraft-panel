@@ -3,7 +3,7 @@ import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { login } from './session'
 import { Box, Eye, EyeOff, LogIn } from '@lucide/vue'
-import { customBranding, portrait } from './branding'
+import { branding } from './branding'
 
 const router = useRouter()
 const username = ref('')
@@ -31,11 +31,11 @@ async function submit() {
   <main class="login">
     <div class="login-frame">
       <div class="login-side">
-        <div v-if="customBranding" class="portrait-frame">
-          <img :src="portrait" alt="" width="640" height="640" fetchpriority="high">
+        <div v-if="branding.portrait" class="portrait-frame">
+          <img :src="branding.portrait" alt="" width="640" height="640" fetchpriority="high">
         </div>
         <span v-else class="login-emblem"><Box :size="52" /></span>
-        <p>Minecraft Panel</p>
+        <p>{{ branding.title }}</p>
       </div>
       <form class="login-form" @submit.prevent="submit">
         <h1>登录管理面板</h1>

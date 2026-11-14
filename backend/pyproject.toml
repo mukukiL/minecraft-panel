@@ -10,6 +10,7 @@ dependencies = [
     "argon2-cffi",
     "python-dotenv",
     "websockets",
+    "pillow",
 ]
 
 [dependency-groups]

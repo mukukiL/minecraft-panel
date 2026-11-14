@@ -2,7 +2,7 @@
 import { onMounted, onUnmounted, ref } from 'vue'
 import { api, explain } from './session'
 import { Copy, Maximize2, Minimize2, Play, RefreshCw, RotateCcw, Send, Server, Square, Terminal, Upload } from '@lucide/vue'
-import { customBranding, portrait } from './branding'
+import { branding } from './branding'
 
 type Action = 'start' | 'stop' | 'restart'
 type Status = { state: string; adapter: string; controls: Action[]; upload_available: boolean; console_available: boolean }
@@ -111,7 +111,7 @@ async function upload() {
           {{ refreshing ? '刷新中' : '刷新' }}
         </button>
       </div>
-      <img v-if="customBranding" class="dashboard-portrait" :src="portrait" alt="" width="128" height="128">
+      <img v-if="branding.portrait" class="dashboard-portrait" :src="branding.portrait" alt="" width="128" height="128">
       <Server v-else :size="56" aria-hidden="true" />
     </div>
     <p v-if="error" class="notice" role="alert">{{ error }}</p>

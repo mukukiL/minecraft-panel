@@ -3,7 +3,7 @@ import { computed, onMounted, onUnmounted, ref } from 'vue'
 import { Activity, Clock3, Cpu, MemoryStick, Radio, Server, WifiOff } from '@lucide/vue'
 import { api } from './session'
 import MetricChart from './MetricChart.vue'
-import { customBranding, portrait } from './branding'
+import { branding } from './branding'
 
 type Sample = { time: number; cpu: number | null; memory: number | null }
 type Snapshot = { state: string; samples: Sample[] }
@@ -50,7 +50,7 @@ onUnmounted(() => { active = false; clearTimeout(timer) })
     <section class="monitor-hero" aria-labelledby="monitor-title">
       <div class="hero-content">
         <div class="hero-icon"><Server :size="23" /></div>
-        <h1 id="monitor-title">Minecraft 服务器</h1>
+        <h1 id="monitor-title">{{ branding.title }}</h1>
         <div class="hero-meta">
           <span class="status-pill" :class="{ online }" role="status">
             <span class="state-dot" :class="{ running: online }" aria-hidden="true"></span>
@@ -62,7 +62,7 @@ onUnmounted(() => { active = false; clearTimeout(timer) })
         </div>
       </div>
       <div class="hero-art">
-        <img v-if="customBranding" :src="portrait" alt="" width="216" height="216" fetchpriority="high">
+        <img v-if="branding.portrait" :src="branding.portrait" alt="" width="216" height="216" fetchpriority="high">
         <Activity v-else :size="104" :stroke-width="1" aria-hidden="true" />
       </div>
     </section>

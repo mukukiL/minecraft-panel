@@ -20,7 +20,15 @@ class RequestLimits:
             await self.reject(scope, receive, send, 400, "HTTPS_REQUIRED")
             return
         if scope["method"] not in {"POST", "PATCH", "PUT", "DELETE"} or (
-            scope["method"] == "PUT" and scope["path"].startswith("/api/v1/mods/upload/")
+            scope["method"] == "PUT"
+            and (
+                scope["path"].startswith("/api/v1/mods/upload/")
+                or scope["path"]
+                in {
+                    "/api/v1/site/images/portrait",
+                    "/api/v1/site/images/background",
+                }
+            )
         ):
             await self.app(scope, receive, send)
             return
