@@ -36,7 +36,7 @@ def test_bad_target():
 
 
 def test_tmux_fixed_argv():
-    run = AsyncMock(side_effect=[Result(0, "123\tkeeper\n"), Result(0, "")])
+    run = AsyncMock(side_effect=[Result(0, "123|keeper\n"), Result(0, "")])
     adapter = TmuxAdapter(profile(), run, lambda _: True, lambda _: False)
     asyncio.run(adapter.start())
     assert run.await_args.args == (
@@ -63,8 +63,8 @@ def test_tmux_fixed_argv():
     ("result", "separate", "busy", "code"),
     [
         (Result(1, ""), True, False, "TMUX_SERVER_UNAVAILABLE"),
-        (Result(0, "123\tkeeper\n"), False, False, "TMUX_CGROUP_UNVERIFIED"),
-        (Result(0, "123\tkeeper\n"), True, True, "GAME_PORT_BUSY"),
+        (Result(0, "123|keeper\n"), False, False, "TMUX_CGROUP_UNVERIFIED"),
+        (Result(0, "123|keeper\n"), True, True, "GAME_PORT_BUSY"),
     ],
 )
 def test_tmux_start_preconditions(result, separate, busy, code):
@@ -77,8 +77,8 @@ def test_tmux_start_preconditions(result, separate, busy, code):
 def test_tmux_existing_session_cannot_be_started_again():
     run = AsyncMock(
         side_effect=[
-            Result(0, "123\tfixture\n"),
-            Result(0, "%3\tminecraft\tjava\t/opt/test game\t0\t0\t456\n"),
+            Result(0, "123|fixture\n"),
+            Result(0, "%3|minecraft|java|/opt/test game|0|0|456\n"),
         ]
     )
     with pytest.raises(Problem, match="TMUX_SESSION_EXISTS"):
@@ -90,8 +90,8 @@ def test_tmux_existing_session_cannot_be_started_again():
 def test_tmux_stop_checks_foreground(command):
     run = AsyncMock(
         side_effect=[
-            Result(0, "123\tfixture\n"),
-            Result(0, f"%3\tminecraft\t{command}\t/opt/test game\t0\t0\t456\n"),
+            Result(0, "123|fixture\n"),
+            Result(0, f"%3|minecraft|{command}|/opt/test game|0|0|456\n"),
             Result(0, ""),
         ]
     )
@@ -123,8 +123,8 @@ def test_screen_exact_target_and_no_blind_input():
 def test_tmux_port_must_belong_to_java(owned, busy, state):
     run = AsyncMock(
         side_effect=[
-            Result(0, "123\tfixture\n"),
-            Result(0, "%3\tminecraft\tjava\t/opt/test game\t0\t0\t456\n"),
+            Result(0, "123|fixture\n"),
+            Result(0, "%3|minecraft|java|/opt/test game|0|0|456\n"),
         ]
     )
     adapter = TmuxAdapter(

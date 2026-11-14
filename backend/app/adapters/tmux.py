@@ -118,8 +118,8 @@ class TmuxAdapter:
         return await self.run("/usr/bin/tmux", "-N", "-S", str(self.profile.tmux_socket), *args)
 
     async def snapshot(self) -> tuple[int, list[str], Pane | None]:
-        result = await self.command("list-sessions", "-F", "#{pid}\t#{session_name}")
-        rows = [line.split("\t", 1) for line in result.stdout.splitlines()]
+        result = await self.command("list-sessions", "-F", "#{pid}|#{session_name}")
+        rows = [line.split("|", 1) for line in result.stdout.splitlines()]
         if (
             result.code
             or not rows
@@ -137,13 +137,13 @@ class TmuxAdapter:
             "-t",
             "=" + self.profile.session_name,
             "-F",
-            "#{pane_id}\t#{window_name}\t#{pane_current_command}\t#{pane_current_path}"
-            "\t#{pane_dead}\t#{pane_in_mode}\t#{pane_pid}",
+            "#{pane_id}|#{window_name}|#{pane_current_command}|#{pane_current_path}"
+            "|#{pane_dead}|#{pane_in_mode}|#{pane_pid}",
         )
         lines = result.stdout.splitlines()
         if result.code or len(lines) != 1:
             raise Problem(409, "TMUX_PANE_UNVERIFIED")
-        fields = lines[0].split("\t")
+        fields = lines[0].split("|")
         if (
             len(fields) != 7
             or not re.fullmatch(r"%[0-9]+", fields[0])
